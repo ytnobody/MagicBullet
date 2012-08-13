@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use MagicBullet;
-use Data::Dumper;
 
 my $mb = MagicBullet->bootstrap;
 $mb->sync;
