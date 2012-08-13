@@ -14,17 +14,19 @@ use Net::SSH::Perl;
 use MagicBullet::Destination;
 our $VERSION = '0.01';
 
-__PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard ) );
+__PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry ) );
 
 sub bootstrap {
     my $class = shift;
     my $dest;
     my $workdir;
     my $repo;
+    my $dry;
     unless ( GetOptions(
         "dest=s@" => \$dest,
         "workdir=s" => \$workdir,
         "repo=s" => \$repo,
+        "dry" => \$dry,
     ) ){
         Carp::croak("could not get options ".$!);
     }
@@ -34,7 +36,7 @@ sub bootstrap {
     unless ( $repo ) {
         Carp::croak("you must specify repository");
     }
-    my $self = $class->new( workdir => $workdir, repo => $repo, dest => $dest );
+    my $self = $class->new( workdir => $workdir, repo => $repo, dest => $dest, dry => $dry );
     $self->clone;
     return $self;
 }
@@ -94,15 +96,30 @@ sub sync {
         my $remote = $self->remote_commit( $dest->stringify );
         $self->show_logs( $dest->stringify );
         unless ( $remote ) {
-            my $ssh = $self->ssh( $dest->host );
-            if ( $ssh->login( $dest->account ) ) {
-                $ssh->cmd( sprintf("mkdir -pv %s", $dest->path) );
+            unless ( $self->dry ) {
+                print "### make destination directory\n";
+                my $ssh = $self->ssh( $dest->host );
+                if ( $ssh->login( $dest->account ) ) {
+                    $ssh->cmd( sprintf("mkdir -pv %s", $dest->path) );
+                }
+            }
+            else {
+                print "### DRYMODE: make destination directory\n";
             }
         }
         unless ( $remote eq $current ) {
+            print $self->dry ? 
+                "### DRYMODE: sync to destination\n" :
+                "### sync to destination\n"
+            ;
+            my @options = $self->dry ? 
+                qw[ -azvun --delete --exclude .git ] :
+                qw[ -azvu --delete --exclude .git ]
+            ;
             $self->rsync( 
-                qw[ -azvu --delete --exclude .git ], 
-                $self->local_repo->stringify, $dest->stringify,
+                @options,
+                $self->local_repo->stringify.'/', 
+                $dest->stringify,
             );
             $self->remote_commit( $dest->stringify, $current );
         }
@@ -136,7 +153,7 @@ sub remote_commit {
 
 sub local_repo {
     my $self = shift;
-    return $self->reposdir->subdir( Digest::MD5::md5_hex( $self->repo ).'/' );
+    return $self->reposdir->subdir( Digest::MD5::md5_hex( $self->repo ) );
 }
 
 sub show_logs {
@@ -169,10 +186,10 @@ sub ssh {
             "$ENV{HOME}/.ssh/id_dsa",
             "$ENV{HOME}/.ssh/id_rsa",
         ],
-        options => [
-            "BatchMode yes", 
-            "RHostAuthentication no"
-        ] 
+#        options => [
+#            "BatchMode yes", 
+#            "RHostAuthentication no"
+#        ] 
     );
 }
 
