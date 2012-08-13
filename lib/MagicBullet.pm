@@ -130,7 +130,7 @@ sub sync {
                 $self->local_repo->stringify.'/', 
                 $dest->stringify,
             );
-            unless ( $self->dry || !$self->force ) { 
+            if ( !$self->dry || $self->force ) { 
                 $self->post_sync( $dest );
                 $self->remote_commit( $dest->stringify, $current );
             }
