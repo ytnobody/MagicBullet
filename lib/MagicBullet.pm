@@ -14,7 +14,7 @@ use Net::SSH::Perl;
 use MagicBullet::Destination;
 our $VERSION = '0.01';
 
-__PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry ) );
+__PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry force ) );
 
 sub bootstrap {
     my $class = shift;
@@ -22,11 +22,13 @@ sub bootstrap {
     my $workdir;
     my $repo;
     my $dry;
+    my $force;
     unless ( GetOptions(
         "dest=s@" => \$dest,
         "workdir=s" => \$workdir,
         "repo=s" => \$repo,
         "dry" => \$dry,
+        "force" => \$force,
     ) ){
         Carp::croak("could not get options ".$!);
     }
@@ -36,7 +38,13 @@ sub bootstrap {
     unless ( $repo ) {
         Carp::croak("you must specify repository");
     }
-    my $self = $class->new( workdir => $workdir, repo => $repo, dest => $dest, dry => $dry );
+    my $self = $class->new( 
+        workdir => $workdir, 
+        repo    => $repo, 
+        dest    => $dest, 
+        dry     => $dry, 
+        force   => $force 
+    );
     $self->clone;
     return $self;
 }
@@ -86,6 +94,7 @@ sub clone {
     else {
         $self->current_commit( (($worktree->show('HEAD'))[0] =~ /^commit (.+)$/)[0] );
         $worktree->pull;
+        $self->current_commit( (($worktree->show('HEAD'))[0] =~ /^commit (.+)$/)[0] );
     }
 }
 
@@ -107,7 +116,7 @@ sub sync {
                 print "### DRYMODE: make destination directory\n";
             }
         }
-        unless ( $remote eq $current ) {
+        unless ( $remote eq $current && !$self->force ) {
             print $self->dry ? 
                 "### DRYMODE: sync to destination\n" :
                 "### sync to destination\n"
@@ -121,8 +130,27 @@ sub sync {
                 $self->local_repo->stringify.'/', 
                 $dest->stringify,
             );
-            unless ( $self->dry ) { 
+            unless ( $self->dry || !$self->force ) { 
+                $self->post_sync( $dest );
                 $self->remote_commit( $dest->stringify, $current );
+            }
+        }
+    }
+}
+
+sub post_sync {
+    my ( $self, $dest ) = @_;
+    my $post_sync_script = $self->local_repo->file( 'postsync.sh' )->stringify;
+    if ( -x $post_sync_script ) {
+        printf "### %s\@%s: Run postsync script\n", $dest->account, $dest->host;
+        my $ssh = $self->ssh( $dest->host );
+        if ( $ssh->login( $dest->account ) ) {
+            print "connected\n";
+            my ( $stdout, $stderr, $exit ) = $ssh->cmd( sprintf( "cd %s && ./postsync.sh", $dest->path ) );
+            print $stdout if $stdout;
+            print $stderr if $stderr;
+            unless ( $exit == 0 ) {
+                Carp::confess( "Failure to exec postsync.sh on %s. account: %s exit code : %d", $dest->host, $dest->account, $exit );
             }
         }
     }
