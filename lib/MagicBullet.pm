@@ -216,15 +216,48 @@ __END__
 
 =head1 NAME
 
-MagicBullet -
+MagicBullet - Yet another deploy helper
 
 =head1 SYNOPSIS
 
-  use MagicBullet;
+    $ magic-bullet \
+        --repo=git://address.to/your/repository \
+        --dest=account@your.dest.host:/path/to/destination/ \
+        ( --dry --force )
 
 =head1 DESCRIPTION
 
-MagicBullet is
+MagicBullet is deploy helper tool that aims be most minimalist in these tools.
+
+=head1 REQUIRED SWITCHES
+
+=head2 --repo [address_for_your_repository]
+
+Specifier for your repository. 
+
+=head2 --dest [account@hostname:path]
+
+Specifier for destination account and host/path.
+
+You may specify this option multiple. Look at followings.
+
+    $ magic-bullet \
+        --repo=git://foobar.com/myname/myrepo \
+        --dest=account@dest1.your.host:/path/to/dest \
+        --dest=account@dest2.your.host:/path/to/dest \
+        --dest=account@dest3.your.host:/path/to/dest
+
+=head1 OPTIONAL SWITCHES
+
+=head2 --dry
+
+Show deploy process and exit (no change).
+
+=head2 --force
+
+=head1 ABOUT POST-SYNC SCRIPT
+
+If ./postsync.sh is in your repository, MagicBullet execute it when files were synced.
 
 =head1 AUTHOR
 
