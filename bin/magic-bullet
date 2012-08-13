@@ -6,4 +6,5 @@ use MagicBullet;
 use Data::Dumper;
 
 my $mb = MagicBullet->bootstrap;
+$mb->clone_repo;
 $mb->sync;

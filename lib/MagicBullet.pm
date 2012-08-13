@@ -18,35 +18,23 @@ __PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dr
 
 sub bootstrap {
     my $class = shift;
-    my $dest;
-    my $workdir;
-    my $repo;
-    my $dry;
-    my $force;
-    unless ( GetOptions(
+    my ( $dest, $workdir, $repo, $dry, $force );
+    Carp::croak("could not get options") unless GetOptions(
         "dest=s@" => \$dest,
         "workdir=s" => \$workdir,
         "repo=s" => \$repo,
         "dry" => \$dry,
         "force" => \$force,
-    ) ){
-        Carp::croak("could not get options ".$!);
-    }
-    unless ( $dest ) {
-        Carp::croak("you must specify 1 or more destination");
-    }
-    unless ( $repo ) {
-        Carp::croak("you must specify repository");
-    }
-    my $self = $class->new( 
+    );
+    Carp::croak("you must specify 1 or more destination") unless $dest;
+    Carp::croak("you must specify repository") unless $repo;
+    return $class->new( 
         workdir => $workdir, 
         repo    => $repo, 
         dest    => $dest, 
         dry     => $dry, 
         force   => $force 
     );
-    $self->clone;
-    return $self;
 }
 
 sub new {
@@ -84,7 +72,7 @@ sub new {
     return $self;
 }
 
-sub clone {
+sub clone_repo {
     my $self = shift;
     my $worktree = $self->worktree;
 
