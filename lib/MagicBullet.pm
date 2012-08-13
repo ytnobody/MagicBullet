@@ -121,7 +121,9 @@ sub sync {
                 $self->local_repo->stringify.'/', 
                 $dest->stringify,
             );
-            $self->remote_commit( $dest->stringify, $current );
+            unless ( $self->dry ) { 
+                $self->remote_commit( $dest->stringify, $current );
+            }
         }
     }
 }
@@ -186,10 +188,10 @@ sub ssh {
             "$ENV{HOME}/.ssh/id_dsa",
             "$ENV{HOME}/.ssh/id_rsa",
         ],
-#        options => [
-#            "BatchMode yes", 
-#            "RHostAuthentication no"
-#        ] 
+        options => [
+            "BatchMode yes", 
+            "RHostAuthentication no"
+        ] 
     );
 }
 
