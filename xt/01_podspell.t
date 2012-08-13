@@ -8,3 +8,6 @@ __DATA__
 ytnobody
 ytnobody@gmail.com
 MagicBullet
+bullet
+dest
+repo
