@@ -4,11 +4,13 @@ all_from 'lib/MagicBullet.pm';
 
 requires 'Path::Class';
 requires 'Git::Class';
-requires 'Getopt::Long';
+requires 'Getopt::Casual';
 requires 'Digest::MD5';
 requires 'Net::SSH::Perl';
 requires 'Data::Dumper::Concise';
 requires 'Guard';
+requires 'YAML';
+requires 'JSON';
 
 tests 't/*.t';
 author_tests 'xt';

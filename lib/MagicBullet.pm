@@ -5,12 +5,13 @@ use parent qw( Class::Accessor::Fast );
 use Path::Class;
 use Git::Class;
 use Git::Class::Worktree;
-use Getopt::Long;
 use Digest::MD5;
 use Carp;
 use Guard ();
+use Getopt::Long;
 use Data::Dumper::Concise;
 use Net::SSH::Perl;
+use MagicBullet::Config;
 use MagicBullet::Destination;
 our $VERSION = '0.01';
 
@@ -18,27 +19,30 @@ __PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dr
 
 sub bootstrap {
     my $class = shift;
-    my ( $dest, $workdir, $repo, $dry, $force );
+    my ( $dest, $workdir, $repo, $dry, $force, $config );
     Carp::croak("could not get options") unless GetOptions(
         "dest=s@" => \$dest,
         "workdir=s" => \$workdir,
         "repo=s" => \$repo,
         "dry" => \$dry,
         "force" => \$force,
+        "config=s" => \$config
     );
-    Carp::croak("you must specify 1 or more destination") unless $dest;
-    Carp::croak("you must specify repository") unless $repo;
-    return $class->new( 
-        workdir => $workdir, 
-        repo    => $repo, 
-        dest    => $dest, 
-        dry     => $dry, 
-        force   => $force 
+    my %conf = ( 
+        dest => $dest,
+        workdir => $workdir,
+        repo => $repo,
+        dry => $dry,
+        force => $force,
+        config($config),
     );
+    return $class->new( %conf );
 }
 
 sub new {
     my ( $class, %opts ) = @_;
+
+    Carp::croak("you must specify repository") unless $opts{repo};
     $opts{ workdir } ||= dir( $ENV{HOME}, '.magic_bullet' );
 
     my $self = $class->SUPER::new( \%opts );
@@ -224,6 +228,9 @@ MagicBullet - Yet another deploy helper
         --repo=git://address.to/your/repository \
         --dest=account@your.dest.host:/path/to/destination/ \
         ( --dry --force )
+    
+    ### or if you use config file,
+    $ magic-bullet --config /path/to/config.json
 
 =head1 DESCRIPTION
 
@@ -254,6 +261,8 @@ You may specify this option multiple. Look at followings.
 Show deploy process and exit (no change).
 
 =head2 --force
+
+=head1 USING CONFIG FILE
 
 =head1 ABOUT POST-SYNC SCRIPT
 
