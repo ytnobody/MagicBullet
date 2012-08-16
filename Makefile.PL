@@ -11,6 +11,7 @@ requires 'Data::Dumper::Concise';
 requires 'Guard';
 requires 'YAML';
 requires 'JSON';
+requires 'Pod::Help';
 
 tests 't/*.t';
 author_tests 'xt';

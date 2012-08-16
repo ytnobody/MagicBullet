@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-use MagicBullet;
+use MagicBullet::Command;
 
-my $mb = MagicBullet->bootstrap;
+my $mb = MagicBullet::Command->bootstrap;
 $mb->clone_repo;
 $mb->sync;
