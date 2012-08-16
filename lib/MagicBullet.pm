@@ -60,13 +60,18 @@ sub clone_repo {
     my $self = shift;
     my $worktree = $self->worktree;
 
-    unless ( $self->current_commit ) {
+    my $update_current_commit = sub {
+        my ( $self, $worktree ) = @_;
         $self->current_commit( (($worktree->show('HEAD'))[0] =~ /^commit (.+)$/)[0] );
+    };
+
+    unless ( $self->current_commit ) {
+        $update_current_commit->( $self, $worktree );
     }
     else {
-        $self->current_commit( (($worktree->show('HEAD'))[0] =~ /^commit (.+)$/)[0] );
+        $update_current_commit->( $self, $worktree );
         $worktree->pull;
-        $self->current_commit( (($worktree->show('HEAD'))[0] =~ /^commit (.+)$/)[0] );
+        $update_current_commit->( $self, $worktree );
     }
 }
 
