@@ -32,15 +32,7 @@ sub new {
     ] );
 
     $self->init_workdir;
-
-    $self->meta( do($self->metafile->stringify) );
-
-    my $metafile = $self->metafile;
-    my $meta = $self->meta;
-    my $guard = Guard::guard {
-        $metafile->spew( Dumper( $meta ) );
-    };
-    $self->guard( $guard );
+    $self->load_metafile;
 
     return $self;
 }
@@ -63,6 +55,18 @@ sub init_workdir {
     }
 }
 
+sub load_metafile {
+    my $self = shift;
+    $self->meta( do($self->metafile->stringify) );
+
+    my $metafile = $self->metafile;
+    my $meta = $self->meta;
+    my $guard = Guard::guard {
+        $metafile->spew( Dumper( $meta ) );
+    };
+    $self->guard( $guard );
+}
+
 sub clone_repo {
     my $self = shift;
     my $worktree = $self->worktree;
@@ -72,14 +76,11 @@ sub clone_repo {
         $self->current_commit( (($worktree->show('HEAD'))[0] =~ /^commit (.+)$/)[0] );
     };
 
-    unless ( $self->current_commit ) {
-        $update_current_commit->( $self, $worktree );
-    }
-    else {
+    if ( $self->current_commit ) {
         $update_current_commit->( $self, $worktree );
         $worktree->pull;
-        $update_current_commit->( $self, $worktree );
     }
+    $update_current_commit->( $self, $worktree );
 }
 
 sub sync {
