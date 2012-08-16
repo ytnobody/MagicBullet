@@ -8,6 +8,9 @@ MagicBullet - Yet another deploy helper
         --repo=git://address.to/your/repository \
         --dest=account@your.dest.host:/path/to/destination/ \
         ( --dry --force )
+    
+    ### or if you use config file,
+    $ magic-bullet --config /path/to/config.json
 
 =head1 DESCRIPTION
 
@@ -38,6 +41,36 @@ You may specify this option multiple. Look at followings.
 Show deploy process and exit (no change).
 
 =head2 --force
+
+Try to rsync force.
+
+=head1 USING CONFIG FILE
+
+You may specify configuration for deploy in ./magicbullet.(pl|yml|yaml|conf|json) 
+
+You have to specify following attributes into configuration.
+
+=over 4
+
+=item repo
+
+URI for repository
+
+=item dest
+
+List of rsync destination.
+
+=back
+
+=head2 EXAMPLE OF CONFIG FILE
+
+    ### magicbullet.yml
+    ---
+    repo: 'git://my.git.host/myname/MyRepo.git',
+    dest:
+      - 'user@www01.myserver:/path/to/deploy/dest'
+      - 'user@www02.myserver:/path/to/deploy/dest'
+      - 'user@www03.myserver:/path/to/deploy/dest'
 
 =head1 ABOUT POST-SYNC SCRIPT
 
