@@ -31,18 +31,7 @@ sub new {
         map { MagicBullet::Destination->new($_) } @{$self->dest}
     ] );
 
-    unless( ref ( $self->workdir ) eq 'Path::Class::Dir' ) {
-        $self->workdir( dir( $self->workdir ) );
-    }
-    $self->workdir->mkpath( 1, 0755 );
-
-    $self->reposdir( $self->workdir->subdir( 'repos' ) ); 
-    $self->reposdir->mkpath( 1, 0755 );
-
-    $self->metafile( $self->workdir->file( 'meta.pl' ) );
-    unless ( -e $self->metafile->stringify ) {
-        $self->metafile->spew( '{};' );
-    }
+    $self->init_workdir;
 
     $self->meta( do($self->metafile->stringify) );
 
@@ -54,6 +43,24 @@ sub new {
     $self->guard( $guard );
 
     return $self;
+}
+
+sub init_workdir {
+    my $self = shift;
+
+    unless( ref ( $self->workdir ) eq 'Path::Class::Dir' ) {
+        $self->workdir( dir( $self->workdir ) );
+    }
+
+    $self->workdir->mkpath( 1, 0755 );
+
+    $self->reposdir( $self->workdir->subdir( 'repos' ) ); 
+    $self->reposdir->mkpath( 1, 0755 );
+
+    $self->metafile( $self->workdir->file( 'meta.pl' ) );
+    unless ( -e $self->metafile->stringify ) {
+        $self->metafile->spew( '{};' );
+    }
 }
 
 sub clone_repo {
