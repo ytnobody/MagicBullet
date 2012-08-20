@@ -14,7 +14,7 @@ use Pod::Help qw( -h --help );
 use MagicBullet::Destination;
 our $VERSION = '0.01';
 
-__PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry force ) );
+__PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry force postsync ) );
 
 sub new {
     my ( $class, %opts ) = @_;
@@ -116,26 +116,33 @@ sub sync {
                 $dest->stringify,
             );
             if ( !$self->dry || $self->force ) { 
-                $self->post_sync( $dest );
+                $self->postsync_run( $dest );
                 $self->remote_commit( $dest->stringify, $current );
             }
         }
     }
 }
 
-sub post_sync {
+sub postsync_run {
     my ( $self, $dest ) = @_;
     my $post_sync_script = $self->local_repo->file( 'postsync.sh' )->stringify;
-    if ( -x $post_sync_script ) {
-        printf "### %s\@%s: Run postsync script\n", $dest->account, $dest->host;
+    if ( -x $post_sync_script || $self->postsync ) {
+        printf "### %s\@%s: Begin postsync step\n", $dest->account, $dest->host;
         my $ssh = $self->ssh( $dest->host );
         if ( $ssh->login( $dest->account ) ) {
             print "connected\n";
-            my ( $stdout, $stderr, $exit ) = $ssh->cmd( sprintf( "cd %s && ./postsync.sh", $dest->path ) );
-            print $stdout if $stdout;
-            print $stderr if $stderr;
-            unless ( $exit == 0 ) {
-                Carp::confess( "Failure to exec postsync.sh on %s. account: %s exit code : %d", $dest->host, $dest->account, $exit );
+            my @cmdlist = 
+                -x $post_sync_script ? './postsync.sh' :
+                $self->postsync ? @{$self->postsync} :
+            ();
+            for my $cmd ( @cmdlist ) {
+                print "$cmd\n";
+                my ( $stdout, $stderr, $exit ) = $ssh->cmd( sprintf( "cd %s; %s", $dest->path, $cmd ) );
+                print $stdout if $stdout;
+                unless ( $exit == 0 ) {
+                    print $stderr if $stderr;
+                    Carp::confess( sprintf( "Failure in postsync step on %s. account: %s exit code : %d", $dest->host, $dest->account, $exit ) );
+                }
             }
         }
     }
@@ -265,13 +272,17 @@ You have to specify following attributes into configuration.
 
 =over 4
 
-=item repo
+=item repo (string)
 
 URI for repository
 
-=item dest
+=item dest (arrayref)
 
 List of rsync destination.
+
+=item postsync (arrayref/optional)
+
+Command list for postsync step
 
 =back
 
@@ -284,6 +295,9 @@ List of rsync destination.
       - 'user@www01.myserver:/path/to/deploy/dest'
       - 'user@www02.myserver:/path/to/deploy/dest'
       - 'user@www03.myserver:/path/to/deploy/dest'
+    postsync:
+      - 'cpanm --test-only ./ -l extlib -v'
+      - 'svc -h /service/myapp'
 
 =head1 ABOUT POST-SYNC SCRIPT
 

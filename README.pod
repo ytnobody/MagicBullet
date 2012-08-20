@@ -52,13 +52,17 @@ You have to specify following attributes into configuration.
 
 =over 4
 
-=item repo
+=item repo (string)
 
 URI for repository
 
-=item dest
+=item dest (arrayref)
 
 List of rsync destination.
+
+=item postsync (arrayref/optional)
+
+Command list for postsync step
 
 =back
 
@@ -71,6 +75,9 @@ List of rsync destination.
       - 'user@www01.myserver:/path/to/deploy/dest'
       - 'user@www02.myserver:/path/to/deploy/dest'
       - 'user@www03.myserver:/path/to/deploy/dest'
+    postsync:
+      - 'cpanm --test-only ./ -l extlib -v'
+      - 'svc -h /service/myapp'
 
 =head1 ABOUT POST-SYNC SCRIPT
 
