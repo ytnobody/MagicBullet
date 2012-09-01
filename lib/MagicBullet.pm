@@ -9,7 +9,6 @@ use Digest::MD5;
 use Carp;
 use Guard ();
 use Data::Dumper::Concise;
-use Net::SSH::Perl;
 use Pod::Help qw( -h --help );
 use URI;
 use MagicBullet::RemoteShell;
@@ -96,6 +95,7 @@ sub sync {
                 if ( my $rsh = MagicBullet::RemoteShell->new( $dest ) ) {
                     $rsh->cmd( sprintf("mkdir -pv %s", $dest->path) );
                 }
+warn 'OKOK';
             }
             else {
                 print "### DRYMODE: make destination directory\n";
@@ -128,14 +128,14 @@ sub postsync_run {
     my $post_sync_script = $self->local_repo->file( 'postsync.sh' )->stringify;
     if ( -x $post_sync_script || $self->postsync ) {
         printf "### %s\@%s: Begin postsync step\n", $dest->account, $dest->host;
-        if (my $ssh = MagicBullet::RemoteShell->new($dest)) {
+        if (my $rsh = MagicBullet::RemoteShell->new($dest)) {
             my @cmdlist = 
                 -x $post_sync_script ? './postsync.sh' :
                 $self->postsync ? @{$self->postsync} :
             ();
             for my $cmd ( @cmdlist ) {
                 print "$cmd\n";
-                my ( $stdout, $stderr, $exit ) = $ssh->cmd( sprintf( "cd %s; %s", $dest->path, $cmd ) );
+                my ( $stdout, $stderr, $exit ) = $rsh->cmd( $cmd );
                 print $stdout if $stdout;
                 unless ( $exit == 0 ) {
                     print $stderr if $stderr;
@@ -196,21 +196,6 @@ sub rsync {
     my @commands = ( qw[ /usr/bin/env rsync ], @_ );
     print join ' ', "### Execute command:", @commands, "\n";
     map { print $_ } `@commands`;
-}
-
-sub ssh {
-    my ( $self, $host ) = @_;
-    return Net::SSH::Perl->new( $host, 
-        identity_files => [
-            "$ENV{HOME}/.ssh/identity",
-            "$ENV{HOME}/.ssh/id_dsa",
-            "$ENV{HOME}/.ssh/id_rsa",
-        ],
-        options => [
-            "BatchMode yes", 
-            "RHostAuthentication no"
-        ] 
-    );
 }
 
 1;

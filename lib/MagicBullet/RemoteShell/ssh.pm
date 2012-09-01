@@ -19,7 +19,6 @@ sub new {
         ] 
     );
     $self->{__URI} = $uri;
-    my $user = $uri->user || $ENV{USER};
     $self->login;
     return $self;
 }
@@ -27,7 +26,7 @@ sub new {
 sub login {
     my $self = shift;
     my $uri = $self->uri;
-    my $user = $uri->user;
+    my $user = $uri->user || $ENV{USER};
     return $uri->password ? 
         $self->SUPER::login( $user, $uri->password ) : 
         $self->SUPER::login( $user ) 
