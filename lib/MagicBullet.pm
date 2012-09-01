@@ -11,7 +11,8 @@ use Guard ();
 use Data::Dumper::Concise;
 use Net::SSH::Perl;
 use Pod::Help qw( -h --help );
-use MagicBullet::Destination;
+use URI;
+use MagicBullet::RemoteShell;
 our $VERSION = '0.01';
 
 __PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry force postsync ) );
@@ -28,7 +29,7 @@ sub new {
     my $self = $class->SUPER::new( \%opts );
 
     $self->dest( [ 
-        map { MagicBullet::Destination->new($_) } @{$self->dest}
+        map { URI->new($_) } @{$self->dest}
     ] );
 
     $self->init_workdir;
@@ -87,14 +88,13 @@ sub sync {
     my $self = shift;
     my $current = $self->current_commit;
     for my $dest ( @{$self->dest} ) {
-        my $remote = $self->remote_commit( $dest->stringify );
-        $self->show_logs( $dest->stringify );
+        my $remote = $self->remote_commit( $dest->as_string );
+        $self->show_logs( $dest->as_string );
         unless ( $remote ) {
             unless ( $self->dry ) {
                 print "### make destination directory\n";
-                my $ssh = $self->ssh( $dest->host );
-                if ( $ssh->login( $dest->account ) ) {
-                    $ssh->cmd( sprintf("mkdir -pv %s", $dest->path) );
+                if ( my $rsh = MagicBullet::RemoteShell->new( $dest ) ) {
+                    $rsh->cmd( sprintf("mkdir -pv %s", $dest->path) );
                 }
             }
             else {
@@ -113,11 +113,11 @@ sub sync {
             $self->rsync( 
                 @options,
                 $self->local_repo->stringify.'/', 
-                $dest->stringify,
+                $dest->as_string,
             );
             if ( !$self->dry || $self->force ) { 
                 $self->postsync_run( $dest );
-                $self->remote_commit( $dest->stringify, $current );
+                $self->remote_commit( $dest->as_string, $current );
             }
         }
     }
@@ -128,9 +128,7 @@ sub postsync_run {
     my $post_sync_script = $self->local_repo->file( 'postsync.sh' )->stringify;
     if ( -x $post_sync_script || $self->postsync ) {
         printf "### %s\@%s: Begin postsync step\n", $dest->account, $dest->host;
-        my $ssh = $self->ssh( $dest->host );
-        if ( $ssh->login( $dest->account ) ) {
-            print "connected\n";
+        if (my $ssh = MagicBullet::RemoteShell->new($dest)) {
             my @cmdlist = 
                 -x $post_sync_script ? './postsync.sh' :
                 $self->postsync ? @{$self->postsync} :
