@@ -119,7 +119,7 @@ sub postsync_run {
     my ( $self, $dest ) = @_;
     my $post_sync_script = $self->local_repo->file( 'postsync.sh' )->stringify;
     if ( -x $post_sync_script || $self->postsync ) {
-        printf "### %s\@%s: Begin postsync step\n", $dest->account, $dest->host;
+        printf "### %s\@%s: Begin postsync step\n", $dest->user, $dest->host;
         if (my $rsh = MagicBullet::RemoteShell->new($dest)) {
             my @cmdlist = 
                 -x $post_sync_script ? './postsync.sh' :
@@ -127,12 +127,8 @@ sub postsync_run {
             ();
             for my $cmd ( @cmdlist ) {
                 print "$cmd\n";
-                my ( $stdout, $stderr, $exit ) = $rsh->cmd( $cmd );
-                print $stdout if $stdout;
-                unless ( $exit == 0 ) {
-                    print $stderr if $stderr;
-                    Carp::confess( sprintf( "Failure in postsync step on %s. account: %s exit code : %d", $dest->host, $dest->account, $exit ) );
-                }
+                my $status = $rsh->cmd( $cmd );
+                return if $status != 0;
             }
         }
     }
