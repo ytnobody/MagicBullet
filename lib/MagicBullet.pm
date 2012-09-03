@@ -12,6 +12,7 @@ use Data::Dumper::Concise;
 use Pod::Help qw( -h --help );
 use URI;
 use MagicBullet::RemoteShell;
+use MagicBullet::Transfer;
 our $VERSION = '0.01';
 
 __PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry force postsync ) );
@@ -95,26 +96,17 @@ sub sync {
                 if ( my $rsh = MagicBullet::RemoteShell->new( $dest ) ) {
                     $rsh->cmd( sprintf("mkdir -pv %s", $dest->path) );
                 }
-warn 'OKOK';
             }
             else {
                 print "### DRYMODE: make destination directory\n";
             }
         }
         unless ( $remote eq $current && !$self->force ) {
-            print $self->dry ? 
-                "### DRYMODE: sync to destination\n" :
-                "### sync to destination\n"
-            ;
-            my @options = $self->dry ? 
-                qw[ -azvun --delete --exclude .git ] :
-                qw[ -azvu --delete --exclude .git ]
-            ;
-            $self->rsync( 
-                @options,
-                $self->local_repo->stringify.'/', 
-                $dest->as_string,
-            );
+            my $transfer = MagicBullet::Transfer->new( 
+                 URI->new( 'file://'. $self->local_repo->stringify.'/', 'file'), 
+                 $dest,
+             );
+            $transfer->transfer( $self->dry );
             if ( !$self->dry || $self->force ) { 
                 $self->postsync_run( $dest );
                 $self->remote_commit( $dest->as_string, $current );
@@ -189,13 +181,6 @@ sub show_logs {
         printf "### First Deploy (Revision: %s)\n", $current;
     }
     map { print "$_\n" } $rev_diff ? $self->worktree->log( $rev_diff ) : $self->worktree->log;
-}
-
-sub rsync {
-    my $self = shift;
-    my @commands = ( qw[ /usr/bin/env rsync ], @_ );
-    print join ' ', "### Execute command:", @commands, "\n";
-    map { print $_ } `@commands`;
 }
 
 1;
