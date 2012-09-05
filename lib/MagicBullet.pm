@@ -17,6 +17,11 @@ our $VERSION = '0.01';
 
 __PACKAGE__->mk_accessors( qw( workdir reposdir metafile dest repo meta guard dry force postsync ) );
 
+sub as_array ($) {
+    my $var = shift;
+    return ref $var eq 'ARRAY' ? @$var : ( $var );
+}
+
 sub new {
     my ( $class, %opts ) = @_;
 
@@ -27,11 +32,7 @@ sub new {
     $opts{ workdir } ||= dir( $ENV{HOME}, '.magic_bullet' );
 
     my $self = $class->SUPER::new( \%opts );
-
-    $self->dest( [ 
-        map { URI->new($_) } @{$self->dest}
-    ] );
-
+    $self->dest( [map { URI->new($_) } as_array $self->dest] );
     $self->init_workdir;
     $self->load_metafile;
 
@@ -87,7 +88,7 @@ sub clone_repo {
 sub sync {
     my $self = shift;
     my $current = $self->current_commit;
-    for my $dest ( @{$self->dest} ) {
+    for my $dest ( as_array $self->dest ) {
         my $remote = $self->remote_commit( $dest->as_string );
         $self->show_logs( $dest->as_string );
         unless ( $remote ) {
@@ -123,7 +124,7 @@ sub postsync_run {
         if (my $rsh = MagicBullet::RemoteShell->new($dest)) {
             my @cmdlist = 
                 -x $post_sync_script ? './postsync.sh' :
-                $self->postsync ? @{$self->postsync} :
+                $self->postsync ? as_array $self->postsync :
             ();
             for my $cmd ( @cmdlist ) {
                 print "$cmd\n";

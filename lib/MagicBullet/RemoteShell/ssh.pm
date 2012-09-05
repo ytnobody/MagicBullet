@@ -1,12 +1,12 @@
 package MagicBullet::RemoteShell::ssh;
 use strict;
 use warnings;
-use parent 'Net::SSH::Perl';
+use Net::SSH::Perl;
 use Carp;
 
 sub new {
     my ( $class, $uri ) = @_;
-    my $self = $class->SUPER::new( 
+    my $ssh = Net::SSH::Perl->new( 
         $uri->host, 
         identity_files => [
             "$ENV{HOME}/.ssh/identity",
@@ -18,7 +18,10 @@ sub new {
             "RHostAuthentication no"
         ] 
     );
-    $self->{__URI} = $uri;
+    my $self = bless {
+        uri => $uri, 
+        ssh => $ssh,
+    }, $class;
     $self->login;
     return $self;
 }
@@ -28,20 +31,20 @@ sub login {
     my $uri = $self->uri;
     my $user = $uri->user || $ENV{USER};
     return $uri->password ? 
-        $self->SUPER::login( $user, $uri->password ) : 
-        $self->SUPER::login( $user ) 
+        $self->ssh->login( $user, $uri->password ) : 
+        $self->ssh->login( $user ) 
     ;
 }
 
-sub uri {
-    return shift->{__URI};
-}
+sub uri { return shift->{uri} }
+
+sub ssh { return shift->{ssh} }
 
 sub cmd {
-    my $self = @_;
+    my $self = shift;
     my $command = join '&&', @_;
     my $uri = $self->uri;
-    my ( $stdout, $stderr, $status ) = $self->SUPER::cmd( sprintf('cd %s; %s'), $uri->path, $command );
+    my ( $stdout, $stderr, $status ) = $self->ssh->cmd( sprintf 'cd %s; %s', $uri->path, $command );
     print $stdout if $stdout;
     unless ( $status == 0 ) {
         print $stderr if $stderr;
