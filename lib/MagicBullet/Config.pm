@@ -6,7 +6,6 @@ use JSON;
 use YAML;
 use Path::Class;
 use File::Find;
-use Data::Dumper;
 
 our @EXPORT = qw( config );
 
@@ -18,7 +17,7 @@ sub config {
         if ( -e $file->stringify ) {
             my $config;
             for my $format ( qw[ as_yaml as_json as_perl ] ) {
-                no strict qw[subs refs];
+                no strict qw[subs refs]; ## no critic
                 $config = eval { &{"MagicBullet::Config::$format"}( $file ) };
                 return %$config if $config;
             }
