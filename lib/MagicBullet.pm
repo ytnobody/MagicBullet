@@ -191,7 +191,7 @@ MagicBullet - Yet another deploy helper
 
     $ magic-bullet \
         --repo=git://address.to/your/repository \
-        --dest=account@your.dest.host:/path/to/destination/ \
+        --dest=ssh://account@your.dest.host/path/to/destination/ \
         ( --dry --force )
     
     ### or if you use config file,
@@ -215,9 +215,9 @@ You may specify this option multiple. Look at followings.
 
     $ magic-bullet \
         --repo=git://foobar.com/myname/myrepo \
-        --dest=account@dest1.your.host:/path/to/dest \
-        --dest=account@dest2.your.host:/path/to/dest \
-        --dest=account@dest3.your.host:/path/to/dest
+        --dest=ssh://account@dest1.your.host/path/to/dest \
+        --dest=ssh://account:pass@dest2.your.host/path/to/dest \
+        --dest=ssh://account@dest3.your.host/path/to/dest
 
 =head1 OPTIONAL SWITCHES
 
@@ -257,9 +257,10 @@ Command list for postsync step
     ---
     repo: 'git://my.git.host/myname/MyRepo.git',
     dest:
-      - 'user@www01.myserver:/path/to/deploy/dest'
-      - 'user@www02.myserver:/path/to/deploy/dest'
-      - 'user@www03.myserver:/path/to/deploy/dest'
+      - 'ssh://user@www01.myserver/path/to/deploy/dest'
+      - 'ssh://user:password@www02.myserver/path/to/deploy/dest'
+      - 'ssh://user@www03.myserver/path/to/deploy/dest'
+      - 'ssh://user:password@www04.myserver/path/to/deploy/dest'
     postsync:
       - 'cpanm --test-only ./ -l extlib -v'
       - 'svc -h /service/myapp'
