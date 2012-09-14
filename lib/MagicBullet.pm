@@ -216,7 +216,7 @@ You may specify this option multiple. Look at followings.
     $ magic-bullet \
         --repo=git://foobar.com/myname/myrepo \
         --dest=ssh://account@dest1.your.host/path/to/dest \
-        --dest=ssh://account:pass@dest2.your.host/path/to/dest \
+        --dest=ssh://account@dest2.your.host/path/to/dest \
         --dest=ssh://account@dest3.your.host/path/to/dest
 
 =head1 OPTIONAL SWITCHES
@@ -258,9 +258,9 @@ Command list for postsync step
     repo: 'git://my.git.host/myname/MyRepo.git',
     dest:
       - 'ssh://user@www01.myserver/path/to/deploy/dest'
-      - 'ssh://user:password@www02.myserver/path/to/deploy/dest'
+      - 'ssh://user@www02.myserver/path/to/deploy/dest'
       - 'ssh://user@www03.myserver/path/to/deploy/dest'
-      - 'ssh://user:password@www04.myserver/path/to/deploy/dest'
+      - 'ssh://user@www04.myserver/path/to/deploy/dest'
     postsync:
       - 'cpanm --test-only ./ -l extlib -v'
       - 'svc -h /service/myapp'
